@@ -12,9 +12,7 @@ const Login = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/users/login', { username, password });
-      console.log('Login successful. Token:', response.data.token);
-      
+      const response = await axios.post('http://localhost:5000/api/users/login', { username, password });      
       // Display success toast
       toast.success('Login successful!', {
         position: "top-center",

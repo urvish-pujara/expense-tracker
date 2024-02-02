@@ -21,6 +21,15 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 
 const ExpensePage = () => {
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const formattedDate =  `${year}-${month}-${day}`;
+    return formattedDate;
+  };
+  
   const navigate = useNavigate();
   const categories = ['Groceries', 'Utilities', 'Dinner', 'Transportation', 'Entertainment', 'Recreation', 'Other'];
   const [expenses, setExpenses] = useState([]);
@@ -29,21 +38,23 @@ const ExpensePage = () => {
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-  const day = currentDate.getDate().toString().padStart(2, '0');
-  const initialDate = `${year}-${month}-${day}`;
-  const [dateOfExpense, setDateOfExpense] = useState(initialDate);  
+  const [dateOfExpense, setDateOfExpense] = useState(formatDate(Date.now()));  
   useEffect(() => {
     fetchExpenses();
   }, []);
   const fetchExpenses = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/expenses');
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('username');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      const response = await axios.get(`http://localhost:5000/api/expenses?user=${user}`, { headers });
       const rows = response.data.expenses.map((expense, index) => ({
         id: index + 1,
         ...expense,
+        date: formatDate(expense.date),
       }));
       setExpenses(rows);
     } catch (error) {
@@ -58,10 +69,6 @@ const ExpensePage = () => {
     setCategory(row?.category || '');
     setDateOfExpense(row?.date || Date.now);
     setOpenDialog(true);
-    const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
-    console.log('token:', token);
-    console.log('username:', username);
   };
 
   const handleCloseDialog = () => {
@@ -72,18 +79,26 @@ const ExpensePage = () => {
     setDateOfExpense(Date.now);
     setOpenDialog(false);
   };
-
+  
   const handleSaveExpense = async () => {
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  
     const data = {
       description,
       amount,
       category,
       date: dateOfExpense,
+      user: username,
     };
-
     try {
       if (expenseId) {
-        const response = await axios.put(`http://localhost:5000/api/expenses/${expenseId}`, data);
+        const response = await axios.put(`http://localhost:5000/api/expenses/${expenseId}`, data, { headers });
         if (response.status === 201) {
           toast.success("Expense updated successfully", {
             position: "top-center",
@@ -102,7 +117,7 @@ const ExpensePage = () => {
           fetchExpenses();
         }
       } else {
-        const response = await axios.post('http://localhost:5000/api/expenses', data);
+        const response = await axios.post('http://localhost:5000/api/expenses', data, { headers });
         if (response.status === 201) {
           toast.success("Expense added successfully", {
             position: "top-center",
@@ -129,7 +144,12 @@ const ExpensePage = () => {
 
   const handleDeleteExpense = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/expenses/${id}`);
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      await axios.delete(`http://localhost:5000/api/expenses/${id}`, { headers });
       fetchExpenses();
     } catch (error) {
       console.error('Error deleting expense:', error);
@@ -216,7 +236,7 @@ const ExpensePage = () => {
             id="dateOfExpense"
             label="Date of Expense"
             type="date"
-            value={dateOfExpense.toString()}
+            value={dateOfExpense} 
             onChange={(e) => setDateOfExpense(e.target.value)}
           />
         </DialogContent>

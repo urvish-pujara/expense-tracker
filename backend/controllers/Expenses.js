@@ -2,12 +2,13 @@ const Expense = require('../models/Expenses');
 
 const createExpense = async (req, res) => {
   try {
-    const { description, amount, category, date } = req.body;
+    const { description, amount, category, date, user } = req.body;
     const newExpense = new Expense({
       description,
       amount,
       category,
       date,
+      user,
     });
     await newExpense.save();
     res.status(201).json({ message: 'Expense created successfully', expense: newExpense });
@@ -18,7 +19,7 @@ const createExpense = async (req, res) => {
 
 const getAllExpenses = async (req, res) => {
   try {
-    const expenses = await Expense.find();
+    const expenses = await Expense.find({ user: req.query.user });
     res.status(200).json({ expenses });
   } catch (error) {
     res.status(500).json({ error: error.message });

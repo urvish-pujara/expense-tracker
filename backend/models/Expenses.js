@@ -6,6 +6,7 @@ const expenseSchema = new Schema({
   amount: { type: Number, required: true },
   category: { type: String, required: true },
   date: { type: Date, default: Date.now },
+  user: { type: String, required: true },
 });
 
 module.exports = mongoose.model('Expense', expenseSchema);
