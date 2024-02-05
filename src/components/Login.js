@@ -34,9 +34,7 @@ const Login = () => {
       // Navigate to the expenses page
       navigate('/expenses');
     } catch (error) {
-      console.log('Login failed. Error:', error);
-      if (error?.response?.data?.message === 'User not found') {
-        console.log('User not found');
+      if (error?.response?.data?.error === 1) {
         // Display error toast for user not found
         toast.error('User not found. Please check your username.', {
           position: "top-center",
@@ -52,9 +50,7 @@ const Login = () => {
             fontWeight: "bold",
           },
         });
-      } else if (error?.response?.data?.message === 'Invalid credentials') {
-        console.log('Invalid credentials');
-        // Display error toast for invalid credentials
+      } else if (error?.response?.data?.error === 2) {
         toast.error('Invalid credentials. Please check your password.', {
           position: "top-center",
           autoClose: 3000,

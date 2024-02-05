@@ -77,7 +77,22 @@ const Register = () => {
       }
     }
     catch (error) {
-      console.error('Error during registration:', error.response.data);
+      if(error){
+        toast.error("Error registering user", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          style: {
+            backgroundColor: "#e57373",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+        });
+      }
     }
   };
 

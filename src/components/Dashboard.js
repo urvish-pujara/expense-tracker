@@ -4,8 +4,10 @@ import { Typography, Grid, Select, MenuItem } from '@mui/material';
 import { LineChart, XAxis, YAxis, CartesianGrid, Line, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const formatDate = (timestamp, type) => {
         const date = new Date(timestamp);
         if (type === 'month') {
@@ -64,7 +66,9 @@ const Dashboard = () => {
 
             setCategoryExpenses(categoryData);
         } catch (error) {
-            console.error('Error fetching expenses:', error);
+            if(error.response.status==401){
+                navigate('/login');
+            }
         }
     };
 

@@ -3,16 +3,16 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const app = express();
+require('dotenv').config();
 
 app.use(cors());
 app.use(bodyParser.json());
 
-mongoose.connect('mongodb+srv://urvish:urvish@expense-tracker.zykccu8.mongodb.net/', { useNewUrlParser: true, useUnifiedTopology: true }).then(
+mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}`,{ useNewUrlParser: true, useUnifiedTopology: true }).then(
   () => {
     console.log('Connected to the database successfully');
   },
   (error) => {
-    console.log(error);
     console.log('Failed to connect to the database');
     process.exit();
   }

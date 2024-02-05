@@ -58,7 +58,9 @@ const ExpensePage = () => {
       }));
       setExpenses(rows);
     } catch (error) {
-      console.error('Error fetching expenses:', error);
+        if(error.response.status==401){
+            navigate('/login');
+        }
     }
   };
 
@@ -137,7 +139,20 @@ const ExpensePage = () => {
         }
       }
     } catch (error) {
-      console.error('Error saving expense:', error);
+      toast.error("Error saving expense", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        style: {
+          backgroundColor: "#e57373",
+          color: "#fff",
+          fontWeight: "bold",
+        },
+      });
     }
     handleCloseDialog();
   };
@@ -152,7 +167,20 @@ const ExpensePage = () => {
       await axios.delete(`http://localhost:5000/api/expenses/${id}`, { headers });
       fetchExpenses();
     } catch (error) {
-      console.error('Error deleting expense:', error);
+      toast.error("Error deleting expense", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        style: {
+          backgroundColor: "#e57373",
+          color: "#fff",
+          fontWeight: "bold",
+        },
+      });
     }
   };
   const columns = [
