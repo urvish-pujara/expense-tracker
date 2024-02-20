@@ -222,7 +222,7 @@ const Register = () => {
                 color="primary"
               />
             }
-            label="Allow notifications"
+            label="Allow notifications and emails"
           />
           <Button
             type="submit"

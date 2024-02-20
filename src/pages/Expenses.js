@@ -12,6 +12,8 @@ import {
   MenuItem,
   TextField,
   IconButton,
+  Slider,
+  Box,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon, Close as CloseIcon } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
@@ -19,6 +21,9 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
+import { init } from '@emailjs/browser';
+init({ publicKey: 'B6kjggLZL4Ik3em9h' });
 
 const ExpensePage = () => {
   const formatDate = (timestamp) => {
@@ -26,22 +31,55 @@ const ExpensePage = () => {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
-    const formattedDate =  `${year}-${month}-${day}`;
+    const formattedDate = `${year}-${month}-${day}`;
     return formattedDate;
   };
-  
+
   const navigate = useNavigate();
   const categories = ['Groceries', 'Utilities', 'Dinner', 'Transportation', 'Entertainment', 'Recreation', 'Other'];
   const [expenses, setExpenses] = useState([]);
+  const [filteredExpenses, setFilteredExpenses] = useState([]);
   const [expenseId, setExpenseId] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
-  const [dateOfExpense, setDateOfExpense] = useState(formatDate(Date.now()));  
+  const [dateOfExpense, setDateOfExpense] = useState(formatDate(Date.now()));
+  const [amountFilter, setAmountFilter] = useState([0, 100000]); // Default amount filter values
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [isFilterApplied, setIsFilterApplied] = useState(false);
+  const [monthlyBudget, setMonthlyBudget] = useState(0);
+  const [yearlyBudget, setYearlyBudget] = useState(0);
   useEffect(() => {
     fetchExpenses();
+    fetchBudget();
   }, []);
+
+  useEffect(() => {
+    if (isFilterApplied) {
+      filterExpenses();
+      setIsFilterApplied(false); // Reset the filter status after applying
+    }
+  }, [isFilterApplied]);
+  useEffect(() => {
+    setFilteredExpenses(expenses); // Initialize filteredExpenses with all expenses
+  }, [expenses]);
+  const fetchBudget = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const username = localStorage.getItem('username');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      const response = await axios.get(`http://localhost:5000/api/users/getBudget/${username}`, { headers });
+      const { monthlyBudget, yearlyBudget } = response.data;
+      setMonthlyBudget(monthlyBudget);
+      setYearlyBudget(yearlyBudget);
+    } catch (error) {
+      console.error('Error fetching budget:', error);
+    }
+  };
   const fetchExpenses = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -58,9 +96,9 @@ const ExpensePage = () => {
       }));
       setExpenses(rows);
     } catch (error) {
-        if(error.response.status==401){
-            navigate('/login');
-        }
+      if (error.response.status === 401) {
+        navigate('/login');
+      }
     }
   };
 
@@ -81,7 +119,7 @@ const ExpensePage = () => {
     setDateOfExpense(Date.now);
     setOpenDialog(false);
   };
-  
+
   const handleSaveExpense = async () => {
     const token = localStorage.getItem('token');
     const username = localStorage.getItem('username');
@@ -90,7 +128,7 @@ const ExpensePage = () => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
-  
+
     const data = {
       description,
       amount,
@@ -117,6 +155,20 @@ const ExpensePage = () => {
             },
           });
           fetchExpenses();
+          const useremail = localStorage.getItem('useremail'); 
+          if (amount + totalCurrentMonthExpenditure > monthlyBudget) {
+            try {
+              await emailjs.send("service_9z00s8l", "template_pbpmj49", {
+                from_name: "Expense tracker",
+                to_name: username,
+                to_email: useremail,
+                message: "You have exceeded your monthly budget limit by " + (amount + totalCurrentMonthExpenditure - monthlyBudget) + " rupees",
+              });
+              fetchExpenses();
+            } catch (error) {
+              console.error('Error sending email:', error);
+            }
+          }
         }
       } else {
         const response = await axios.post('http://localhost:5000/api/expenses', data, { headers });
@@ -183,6 +235,18 @@ const ExpensePage = () => {
       });
     }
   };
+
+  const filterExpenses = () => {
+    let filtered = expenses.filter(expense => {
+      return (
+        expense.amount >= amountFilter[0] &&
+        expense.amount <= amountFilter[1] &&
+        (selectedCategories.length === 0 || selectedCategories.includes(expense.category))
+      );
+    });
+    setFilteredExpenses(filtered);
+  };
+
   const columns = [
     { field: 'id', headerName: 'ID', width: 90 },
     { field: 'description', headerName: 'Description', width: 250 },
@@ -205,14 +269,52 @@ const ExpensePage = () => {
       ),
     },
   ];
-  
-  
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1; // Month is zero-based
+  const currentYear = currentDate.getFullYear();
 
+  const totalCurrentMonthExpenditure = filteredExpenses.reduce((total, expense) => {
+    const expenseDate = new Date(expense.date);
+    const expenseMonth = expenseDate.getMonth() + 1;
+    const expenseYear = expenseDate.getFullYear();
+
+    if (expenseMonth === currentMonth && expenseYear === currentYear) {
+      total += expense.amount;
+    }
+    return total;
+  }, 0);
+
+  // Calculate total current year expenditure
+  const totalCurrentYearExpenditure = filteredExpenses.reduce((total, expense) => {
+    const expenseDate = new Date(expense.date);
+    const expenseYear = expenseDate.getFullYear();
+
+    if (expenseYear === currentYear) {
+      total += expense.amount;
+    }
+
+    return total;
+  }, 0);
   return (
-    <div style={{ height: 400, width: '100%' }}>
+    <div style={{ width: '100%' }}>
       <Typography variant="h4" gutterBottom>
         Expenses
       </Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        Total Current Month Expenditure: ₹{totalCurrentMonthExpenditure.toFixed(2)} {' ('}
+        <span style={{ color: monthlyBudget - totalCurrentMonthExpenditure >= 0 ? 'green' : 'red' }}>
+          ₹{monthlyBudget - totalCurrentMonthExpenditure.toFixed(2)}
+        </span>
+        {') '}
+      </Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        Total Current Year Expenditure: ₹{totalCurrentYearExpenditure.toFixed(2)} {' ('}
+        <span style={{ color: yearlyBudget - totalCurrentYearExpenditure >= 0 ? 'green' : 'red' }}>
+          ₹{yearlyBudget - totalCurrentYearExpenditure.toFixed(2)}
+        </span>
+        {') '}
+      </Typography>
+
       <Button
         variant="contained"
         color="primary"
@@ -222,10 +324,47 @@ const ExpensePage = () => {
       >
         Add Expense
       </Button>
+      <Box width="300px" margin="0 auto"> {/* Center dropdown and slider */}
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="category-label">Select Categories</InputLabel>
+          <Select
+            labelId="category-label"
+            multiple
+            value={selectedCategories}
+            onChange={(e) => setSelectedCategories(e.target.value)}
+            renderValue={(selected) => selected.join(', ')}
+          >
+            {categories.map((category) => (
+              <MenuItem key={category} value={category}>
+                {category}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Typography id="range-slider" gutterBottom>
+          Amount Range
+        </Typography>
+        <Slider
+          value={amountFilter}
+          onChange={(event, newValue) => setAmountFilter(newValue)}
+          valueLabelDisplay="auto"
+          aria-labelledby="range-slider"
+          min={0}
+          max={1000}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setIsFilterApplied(true)}
+          style={{ marginTop: 16 }}
+        >
+          Apply Filter
+        </Button>
+      </Box>
       <DataGrid
-        rows={expenses}
+        rows={filteredExpenses}
         columns={columns}
-        getRowId={(row) => row._id} // Assuming _id is the unique identifier in your data
+        getRowId={(row) => row._id}
       />
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>{expenseId ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
@@ -264,7 +403,7 @@ const ExpensePage = () => {
             id="dateOfExpense"
             label="Date of Expense"
             type="date"
-            value={dateOfExpense} 
+            value={dateOfExpense}
             onChange={(e) => setDateOfExpense(e.target.value)}
           />
         </DialogContent>

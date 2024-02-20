@@ -31,6 +31,7 @@ const Login = () => {
       // Save the token in local storage
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('username', username);
+      localStorage.setItem('useremail', response.data.email);
       // Navigate to the expenses page
       navigate('/expenses');
     } catch (error) {

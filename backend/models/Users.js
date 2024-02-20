@@ -10,6 +10,8 @@ const userSchema = new Schema({
   profilePicture: { type: String },
   phoneNumber: { type: String },
   allowNotifications: { type: Boolean },
+  monthlyBudget: { type: Number },
+  yearlyBudget: { type: Number },
 });
 
 module.exports = mongoose.model('User', userSchema);

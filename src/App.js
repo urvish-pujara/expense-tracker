@@ -1,10 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Register from './components/Register';
-import Login from './components/Login';
+import Register from './pages/Register';
+import Login from './pages/Login';
 import backgroundImage from './assets/j.jpg'; // Replace with the correct path to your image
-import Expenses from './components/Expenses';
-import Dashboard from './components/Dashboard';
+import Expenses from './pages/Expenses';
+import Dashboard from './pages/Dashboard';
 function App() {
 
   const appStyle = {
