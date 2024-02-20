@@ -19,12 +19,39 @@ const createExpense = async (req, res) => {
 
 const getAllExpenses = async (req, res) => {
   try {
-    const expenses = await Expense.find({ user: req.query.user });
-    res.status(200).json({ expenses });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const user = req.query.user;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const results = {};
+
+    results.totalCount = await Expense.countDocuments({ user });
+
+    if (endIndex < results.totalCount) {
+      results.next = {
+        page: page + 1,
+        limit: limit
+      };
+    }
+
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit
+      };
+    }
+
+    results.expenses = await Expense.find({ user }).limit(limit).skip(startIndex);
+
+    res.status(200).json(results);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 const getExpenseById = async (req, res) => {
   try {

@@ -50,10 +50,14 @@ const ExpensePage = () => {
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [yearlyBudget, setYearlyBudget] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+
   useEffect(() => {
     fetchExpenses();
     fetchBudget();
-  }, []);
+  }, [page, pageSize]); // Reload expenses when page or page size changes
 
   useEffect(() => {
     if (isFilterApplied) {
@@ -61,9 +65,11 @@ const ExpensePage = () => {
       setIsFilterApplied(false); // Reset the filter status after applying
     }
   }, [isFilterApplied]);
+
   useEffect(() => {
     setFilteredExpenses(expenses); // Initialize filteredExpenses with all expenses
   }, [expenses]);
+
   const fetchBudget = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -80,6 +86,7 @@ const ExpensePage = () => {
       console.error('Error fetching budget:', error);
     }
   };
+
   const fetchExpenses = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -88,13 +95,15 @@ const ExpensePage = () => {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
-      const response = await axios.get(`http://localhost:5000/api/expenses?user=${user}`, { headers });
-      const rows = response.data.expenses.map((expense, index) => ({
+
+      const response = await axios.get(`http://localhost:5000/api/expenses?user=${user}&page=${page}&limit=${pageSize}`, { headers });
+      const { expenses: fetchedExpenses, totalPages: fetchedTotalPages } = response.data;
+      setExpenses(fetchedExpenses.map((expense, index) => ({
         id: index + 1,
         ...expense,
         date: formatDate(expense.date),
-      }));
-      setExpenses(rows);
+      })));
+      setTotalPages(fetchedTotalPages);
     } catch (error) {
       if (error.response.status === 401) {
         navigate('/login');
@@ -136,6 +145,7 @@ const ExpensePage = () => {
       date: dateOfExpense,
       user: username,
     };
+
     try {
       if (expenseId) {
         const response = await axios.put(`http://localhost:5000/api/expenses/${expenseId}`, data, { headers });
@@ -269,6 +279,7 @@ const ExpensePage = () => {
       ),
     },
   ];
+
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1; // Month is zero-based
   const currentYear = currentDate.getFullYear();
@@ -295,6 +306,7 @@ const ExpensePage = () => {
 
     return total;
   }, 0);
+
   return (
     <div style={{ width: '100%' }}>
       <Typography variant="h4" gutterBottom>
@@ -365,6 +377,12 @@ const ExpensePage = () => {
         rows={filteredExpenses}
         columns={columns}
         getRowId={(row) => row._id}
+        pagination
+        pageSize={pageSize}
+        rowCount={totalPages * pageSize}
+        onPageChange={(newPage) => setPage(newPage + 1)}
+        rowsPerPageOptions={[25, 50, 100]}
+        onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
       />
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>{expenseId ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
