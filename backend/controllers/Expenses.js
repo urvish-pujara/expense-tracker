@@ -22,13 +22,23 @@ const getAllExpenses = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const user = req.query.user;
+    const categories = req.query.categories?.split(',') || [];
+    const minAmount = parseInt(req.query.minAmount) || 0;
+    const maxAmount = parseInt(req.query.maxAmount) || Infinity;
 
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
 
     const results = {};
 
-    results.totalCount = await Expense.countDocuments({ user });
+    // Prepare query conditions based on user, categories, and amount range
+    const query = { user };
+    if (categories?.length && categories?.length > 0 && categories[0] !== '') {
+      query.category = { $in: categories };
+    }
+    query.amount = { $gte: minAmount, $lte: maxAmount };
+
+    results.totalCount = await Expense.countDocuments(query);
 
     if (endIndex < results.totalCount) {
       results.next = {
@@ -44,13 +54,14 @@ const getAllExpenses = async (req, res) => {
       };
     }
 
-    results.expenses = await Expense.find({ user }).limit(limit).skip(startIndex);
+    results.expenses = await Expense.find(query).limit(limit).skip(startIndex);
 
     res.status(200).json(results);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 
 const getExpenseById = async (req, res) => {

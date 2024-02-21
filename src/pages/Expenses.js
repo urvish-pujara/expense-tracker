@@ -38,7 +38,6 @@ const ExpensePage = () => {
   const navigate = useNavigate();
   const categories = ['Groceries', 'Utilities', 'Dinner', 'Transportation', 'Entertainment', 'Recreation', 'Other'];
   const [expenses, setExpenses] = useState([]);
-  const [filteredExpenses, setFilteredExpenses] = useState([]);
   const [expenseId, setExpenseId] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState(0);
@@ -46,8 +45,8 @@ const ExpensePage = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [dateOfExpense, setDateOfExpense] = useState(formatDate(Date.now()));
   const [amountFilter, setAmountFilter] = useState([0, 100000]); // Default amount filter values
-  const [selectedCategories, setSelectedCategories] = useState([]);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [yearlyBudget, setYearlyBudget] = useState(0);
   const [page, setPage] = useState(1);
@@ -57,18 +56,8 @@ const ExpensePage = () => {
   useEffect(() => {
     fetchExpenses();
     fetchBudget();
-  }, [page, pageSize]); // Reload expenses when page or page size changes
-
-  useEffect(() => {
-    if (isFilterApplied) {
-      filterExpenses();
-      setIsFilterApplied(false); // Reset the filter status after applying
-    }
-  }, [isFilterApplied]);
-
-  useEffect(() => {
-    setFilteredExpenses(expenses); // Initialize filteredExpenses with all expenses
-  }, [expenses]);
+    setIsFilterApplied(false);
+  }, [page, pageSize, isFilterApplied]); // Reload expenses when page or page size changes
 
   const fetchBudget = async () => {
     try {
@@ -95,8 +84,11 @@ const ExpensePage = () => {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
-
-      const response = await axios.get(`http://localhost:5000/api/expenses?user=${user}&page=${page}&limit=${pageSize}`, { headers });
+  
+      const url = `http://localhost:5000/api/expenses?user=${user}&page=${page}&limit=${pageSize}` + 
+                  `&categories=${selectedCategories.join(',')}&minAmount=${amountFilter[0]}&maxAmount=${amountFilter[1]}`;
+      const response = await axios.get(url, { headers });
+      console.log('response.data', response.data);
       const { expenses: fetchedExpenses, totalPages: fetchedTotalPages } = response.data;
       setExpenses(fetchedExpenses.map((expense, index) => ({
         id: index + 1,
@@ -108,8 +100,10 @@ const ExpensePage = () => {
       if (error.response.status === 401) {
         navigate('/login');
       }
+      console.error('Error fetching expenses:', error);
     }
   };
+  
 
   const handleOpenDialog = (row) => {
     setExpenseId(row?._id || '');
@@ -246,17 +240,6 @@ const ExpensePage = () => {
     }
   };
 
-  const filterExpenses = () => {
-    let filtered = expenses.filter(expense => {
-      return (
-        expense.amount >= amountFilter[0] &&
-        expense.amount <= amountFilter[1] &&
-        (selectedCategories.length === 0 || selectedCategories.includes(expense.category))
-      );
-    });
-    setFilteredExpenses(filtered);
-  };
-
   const columns = [
     { field: 'id', headerName: 'ID', width: 90 },
     { field: 'description', headerName: 'Description', width: 250 },
@@ -284,7 +267,7 @@ const ExpensePage = () => {
   const currentMonth = currentDate.getMonth() + 1; // Month is zero-based
   const currentYear = currentDate.getFullYear();
 
-  const totalCurrentMonthExpenditure = filteredExpenses.reduce((total, expense) => {
+  const totalCurrentMonthExpenditure = expenses.reduce((total, expense) => {
     const expenseDate = new Date(expense.date);
     const expenseMonth = expenseDate.getMonth() + 1;
     const expenseYear = expenseDate.getFullYear();
@@ -296,7 +279,7 @@ const ExpensePage = () => {
   }, 0);
 
   // Calculate total current year expenditure
-  const totalCurrentYearExpenditure = filteredExpenses.reduce((total, expense) => {
+  const totalCurrentYearExpenditure = expenses.reduce((total, expense) => {
     const expenseDate = new Date(expense.date);
     const expenseYear = expenseDate.getFullYear();
 
@@ -362,7 +345,7 @@ const ExpensePage = () => {
           valueLabelDisplay="auto"
           aria-labelledby="range-slider"
           min={0}
-          max={1000}
+          max={100000}
         />
         <Button
           variant="contained"
@@ -374,7 +357,7 @@ const ExpensePage = () => {
         </Button>
       </Box>
       <DataGrid
-        rows={filteredExpenses}
+        rows={expenses}
         columns={columns}
         getRowId={(row) => row._id}
         pagination

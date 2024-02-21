@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import backgroundImage from './assets/j.jpg'; // Replace with the correct path to your image
 import Expenses from './pages/Expenses';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 function App() {
 
   const appStyle = {
@@ -27,6 +28,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile/>} />
         {/* Add more routes for your Expense Tracker app */}
       </Routes>
       </div>
