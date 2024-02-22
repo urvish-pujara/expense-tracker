@@ -49,6 +49,8 @@ const ExpensePage = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [yearlyBudget, setYearlyBudget] = useState(0);
+  const [totalCurrentMonthExpenditure, setTotalCurrentMonthExpenditure] = useState(0);
+  const [totalCurrentYearExpenditure, setTotalCurrentYearExpenditure] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(100);
@@ -71,6 +73,10 @@ const ExpensePage = () => {
       const { monthlyBudget, yearlyBudget } = response.data;
       setMonthlyBudget(monthlyBudget);
       setYearlyBudget(yearlyBudget);
+      const expenditureResponse = await axios.get(`http://localhost:5000/api/expenses/expenditure/${username}`, { headers });
+      const { totalMonthlyExpenditure, totalYearlyExpenditure } = expenditureResponse.data;
+      setTotalCurrentMonthExpenditure(parseInt(totalMonthlyExpenditure));
+      setTotalCurrentYearExpenditure(parseInt(totalYearlyExpenditure));
     } catch (error) {
       console.error('Error fetching budget:', error);
     }
@@ -88,14 +94,13 @@ const ExpensePage = () => {
       const url = `http://localhost:5000/api/expenses?user=${user}&page=${page}&limit=${pageSize}` + 
                   `&categories=${selectedCategories.join(',')}&minAmount=${amountFilter[0]}&maxAmount=${amountFilter[1]}`;
       const response = await axios.get(url, { headers });
-      console.log('response.data', response.data);
-      const { expenses: fetchedExpenses, totalPages: fetchedTotalPages } = response.data;
+      const { expenses: fetchedExpenses, totalCount: fetchedTotalCount } = response.data;
       setExpenses(fetchedExpenses.map((expense, index) => ({
         id: index + 1,
         ...expense,
         date: formatDate(expense.date),
       })));
-      setTotalPages(fetchedTotalPages);
+      setTotalPages(Math.ceil(fetchedTotalCount / pageSize));
     } catch (error) {
       if (error.response.status === 401) {
         navigate('/login');
@@ -159,7 +164,9 @@ const ExpensePage = () => {
             },
           });
           fetchExpenses();
+          console.log("useremail");
           const useremail = localStorage.getItem('useremail'); 
+          console.log("useremail", useremail);
           if (amount + totalCurrentMonthExpenditure > monthlyBudget) {
             try {
               await emailjs.send("service_9z00s8l", "template_pbpmj49", {
@@ -263,49 +270,22 @@ const ExpensePage = () => {
     },
   ];
 
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1; // Month is zero-based
-  const currentYear = currentDate.getFullYear();
-
-  const totalCurrentMonthExpenditure = expenses.reduce((total, expense) => {
-    const expenseDate = new Date(expense.date);
-    const expenseMonth = expenseDate.getMonth() + 1;
-    const expenseYear = expenseDate.getFullYear();
-
-    if (expenseMonth === currentMonth && expenseYear === currentYear) {
-      total += expense.amount;
-    }
-    return total;
-  }, 0);
-
-  // Calculate total current year expenditure
-  const totalCurrentYearExpenditure = expenses.reduce((total, expense) => {
-    const expenseDate = new Date(expense.date);
-    const expenseYear = expenseDate.getFullYear();
-
-    if (expenseYear === currentYear) {
-      total += expense.amount;
-    }
-
-    return total;
-  }, 0);
-
   return (
     <div style={{ width: '100%' }}>
       <Typography variant="h4" gutterBottom>
         Expenses
       </Typography>
       <Typography variant="subtitle1" gutterBottom>
-        Total Current Month Expenditure: ₹{totalCurrentMonthExpenditure.toFixed(2)} {' ('}
+        Total Current Month Expenditure: ₹{totalCurrentMonthExpenditure} {' ('}
         <span style={{ color: monthlyBudget - totalCurrentMonthExpenditure >= 0 ? 'green' : 'red' }}>
-          ₹{monthlyBudget - totalCurrentMonthExpenditure.toFixed(2)}
+          ₹{monthlyBudget - totalCurrentMonthExpenditure}
         </span>
         {') '}
       </Typography>
       <Typography variant="subtitle1" gutterBottom>
-        Total Current Year Expenditure: ₹{totalCurrentYearExpenditure.toFixed(2)} {' ('}
+        Total Current Year Expenditure: ₹{totalCurrentYearExpenditure} {' ('}
         <span style={{ color: yearlyBudget - totalCurrentYearExpenditure >= 0 ? 'green' : 'red' }}>
-          ₹{yearlyBudget - totalCurrentYearExpenditure.toFixed(2)}
+          ₹{yearlyBudget - totalCurrentYearExpenditure}
         </span>
         {') '}
       </Typography>

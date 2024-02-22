@@ -8,5 +8,6 @@ router.get('/', authenticateUser, ExpenseController.getAllExpenses);
 router.get('/:id', authenticateUser, ExpenseController.getExpenseById);
 router.put('/:id', authenticateUser, ExpenseController.updateExpenseById);
 router.delete('/:id', authenticateUser, ExpenseController.deleteExpenseById);
+router.get('/expenditure/:username', authenticateUser, ExpenseController.getExpenditure);
 
 module.exports = router;

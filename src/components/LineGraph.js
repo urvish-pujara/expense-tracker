@@ -5,8 +5,6 @@ import { LineChart, XAxis, YAxis, CartesianGrid, Line, Tooltip, Legend } from 'r
 const LineGraph = ({ data, title, xdatakey, linedatakey, children, multipleLines }) => {
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
     multipleLines = multipleLines || false;
-    console.log('data', data);
-    console.log('linedatakay', linedatakey);
     return (
         <Grid item xs={12} md={4}>
             <Typography variant="h5" gutterBottom>

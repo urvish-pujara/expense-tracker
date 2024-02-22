@@ -103,5 +103,26 @@ const deleteExpenseById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const getExpenditure = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const expenses = await Expense.find({ user: username });
+    const totalMonthlyExpenditure = expenses.reduce((total, expense) => {
+      if (expense.date.getMonth() === new Date().getMonth()) {
+        total += expense.amount;
+      }
+      return total;
+    }, 0);
+    const totalYearlyExpenditure = expenses.reduce((total, expense) => {
+      if (expense.date.getFullYear() === new Date().getFullYear()) {
+        total += expense.amount;
+      }
+      return total;
+    }, 0);
+    res.status(200).json({ totalMonthlyExpenditure, totalYearlyExpenditure });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
-module.exports = { createExpense, getAllExpenses, getExpenseById, updateExpenseById, deleteExpenseById };
+module.exports = { createExpense, getAllExpenses, getExpenseById, updateExpenseById, deleteExpenseById, getExpenditure };
