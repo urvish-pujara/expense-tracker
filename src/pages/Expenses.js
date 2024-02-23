@@ -54,12 +54,13 @@ const ExpensePage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(100);
+  const [fetchex, setFetchex] = useState(false);
 
   useEffect(() => {
     fetchExpenses();
     fetchBudget();
     setIsFilterApplied(false);
-  }, [page, pageSize, isFilterApplied]); // Reload expenses when page or page size changes
+  }, [page, pageSize, isFilterApplied, fetchex]); // Reload expenses when page or page size changes
 
   const fetchBudget = async () => {
     try {
@@ -149,7 +150,7 @@ const ExpensePage = () => {
       if (expenseId) {
         const response = await axios.put(`http://localhost:5000/api/expenses/${expenseId}`, data, { headers });
         if (response.status === 201) {
-          toast.success("Expense updated successfully", {
+          toast.success("Expense updatedddddddddddddddddddddddddddddddd successfully", {
             position: "top-center",
             autoClose: 3000,
             hideProgressBar: true,
@@ -163,19 +164,17 @@ const ExpensePage = () => {
               fontWeight: "bold",
             },
           });
-          fetchExpenses();
-          console.log("useremail");
+          setFetchex(!fetchex);
           const useremail = localStorage.getItem('useremail'); 
-          console.log("useremail", useremail);
           if (amount + totalCurrentMonthExpenditure > monthlyBudget) {
+            console.log(amount + totalCurrentMonthExpenditure - monthlyBudget);
             try {
               await emailjs.send("service_9z00s8l", "template_pbpmj49", {
                 from_name: "Expense tracker",
                 to_name: username,
                 to_email: useremail,
-                message: "You have exceeded your monthly budget limit by " + (amount + totalCurrentMonthExpenditure - monthlyBudget) + " rupees",
+                message: "You have exceeded your monthly budget limit by " + (parseInt(amount) + totalCurrentMonthExpenditure - monthlyBudget) + " rupees",
               });
-              fetchExpenses();
             } catch (error) {
               console.error('Error sending email:', error);
             }
@@ -198,7 +197,20 @@ const ExpensePage = () => {
               fontWeight: "bold",
             },
           });
-          fetchExpenses();
+          setFetchex(!fetchex);
+          const useremail = localStorage.getItem('useremail'); 
+          if (amount + totalCurrentMonthExpenditure > monthlyBudget) {
+            try {
+              await emailjs.send("service_9z00s8l", "template_pbpmj49", {
+                from_name: "Expense tracker",
+                to_name: username,
+                to_email: useremail,
+                message: "You have exceeded your monthly budget limit by " + (parseInt(amount) + totalCurrentMonthExpenditure - monthlyBudget) + " rupees",
+              });
+            } catch (error) {
+              console.error('Error sending email:', error);
+            }
+          }
         }
       }
     } catch (error) {
